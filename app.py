@@ -36,7 +36,7 @@ def img2str(result):
     return img_str
 
 @app.post('/white_balance')
-async def upload(request: Request):
+async def white_balance_(request: Request):
     image = await read_image(request)
     try:
         result = white_balance(image)
@@ -47,7 +47,7 @@ async def upload(request: Request):
         return JSONResponse(content={"message": "server failure"}, status_code=500)
 
 @app.post('/smooth_face')
-async def upload(request: Request):
+async def smooth_face_(request: Request):
     image = await read_image(request)
     try:
         result = smooth_face(image)
@@ -58,7 +58,7 @@ async def upload(request: Request):
         return JSONResponse(content={"message": "server failure"}, status_code=500)
 
 @app.post('/rotate_by_eye')
-async def upload(request: Request):
+async def rotate_by_eye_(request: Request):
     image = await read_image(request)
     try:
         result = rotate_by_eye(image)
@@ -69,7 +69,7 @@ async def upload(request: Request):
         return JSONResponse(content={"message": "server failure"}, status_code=500)
 
 @app.post('/matting')
-async def upload(request: Request):
+async def matting_(request: Request):
     image = await read_image(request)
     try:
         result = matting(image)
@@ -80,7 +80,7 @@ async def upload(request: Request):
         return JSONResponse(content={"message": "server failure"}, status_code=500)
 
 @app.post('/crop_image')
-async def upload(request: Request):
+async def crop_image_(request: Request):
     image = await read_image(request)
     try:
         result = crop_image(image)
@@ -94,7 +94,7 @@ async def upload(request: Request):
         return JSONResponse(content={"message": "server failure"}, status_code=500)
     
 @app.post('/sub')
-async def upload(request: Request):
+async def sub_(request: Request):
     form = await request.form()
     image = await read_image(request)
     param = [image, 'vi']

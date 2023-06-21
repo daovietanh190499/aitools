@@ -49,9 +49,7 @@ def rotate_by_eye(image):
     angle = math.atan2(abs(left_eye[1] - right_eye[1]), abs(left_eye[0] - right_eye[0]))*180/math.pi
     
     img_cv = cv2.cvtColor(np.array(image).astype('uint8'), cv2.COLOR_RGB2BGR)
-    if is_white_balance:
-        img_cv = white_balance(img_cv)
-    img_cv = rotate_image(img_cv, -angle if is_rotate else 0)
+    img_cv = rotate_image(img_cv, -angle)
     return img_cv
 
 def matting(image):
@@ -73,7 +71,7 @@ def parsing(image):
     img_parse = Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
     src_parse = img.unsqueeze(0)
 
-    out = model_parsing(src)[0]
+    out = model_parsing(src_parse)[0]
     parsing = out.squeeze(0).detach().cpu().numpy().argmax(0)
     
     contours, hierarchy = cv2.findContours((parsing > 0).astype('uint8'), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -110,9 +108,9 @@ def crop_image(image):
     mask, all_box, face_box = parsing(image)
     image = cv2.cvtColor(np.array(image).astype('uint8'), cv2.COLOR_RGB2BGR)
     result_imgs = []
-    img_spec = [[30, 40], [40, 60]]
+    img_spec = [[30, 40, 2.5, 25], [40, 60, 5, 30]]
     for isp in img_spec:
-        width, height, toptop, face_length, num_img = isp[0], isp[1], isp[2], isp[3], isp[4]
+        width, height, toptop, face_length = isp[0], isp[1], isp[2], isp[3]
         new_face_box = [0,0,0,0]
         
         upper_length = face_box[3]/(face_length/toptop)
@@ -127,9 +125,7 @@ def crop_image(image):
         new_face_box[3] = round(total_length)
 
         result_img = image[new_face_box[1]: new_face_box[1] + new_face_box[3], new_face_box[0]: new_face_box[0] + new_face_box[2]]
-        result_img = result_img*255
-        
-        result_imgs.append((result_img, new_face_box))
+        result_imgs.append(result_img)
     return result_imgs
 
 from models import load_textdetector_model, dispatch_textdetector, dispatch_inpainting, load_inpainting_model, OCRMIT48pxCTC
