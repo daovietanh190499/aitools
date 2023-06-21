@@ -20,7 +20,8 @@ model_parsing.load_state_dict(torch.load('models/weights/79999_iter.pth', map_lo
 model_mtcnn = MTCNN(select_largest=True, device=device_str)
 
 def white_balance(img):
-    result = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
+    img_cv = cv2.cvtColor(np.array(img).astype('uint8'), cv2.COLOR_RGB2BGR)
+    result = cv2.cvtColor(img_cv, cv2.COLOR_BGR2LAB)
     avg_a = np.average(result[:, :, 1])
     avg_b = np.average(result[:, :, 2])
     result[:, :, 1] = result[:, :, 1] - ((avg_a - 128) * (result[:, :, 0] / 255.0) * 1.1)
@@ -28,7 +29,8 @@ def white_balance(img):
     result = cv2.cvtColor(result, cv2.COLOR_LAB2BGR)
     return result
 
-def smooth_face(img, size, sigma):
+def smooth_face(img, size=20, sigma=5):
+    img = cv2.cvtColor(np.array(img).astype('uint8'), cv2.COLOR_RGB2BGR)
     img = cv2.bilateralFilter(img,int(size),int(sigma),int(sigma))
     # img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
@@ -50,8 +52,7 @@ def rotate_by_eye(image):
     if is_white_balance:
         img_cv = white_balance(img_cv)
     img_cv = rotate_image(img_cv, -angle if is_rotate else 0)
-    img_pil = Image.fromarray(cv2.cvtColor(img_cv, cv2.COLOR_BGR2RGB))
-    return img_pil
+    return img_cv
 
 def matting(image):
     bgr = torch.tensor([.47, 1., .6]).view(3, 1, 1).to(device)
@@ -59,12 +60,12 @@ def matting(image):
     rec = [None] * 4                                       
     downsample_ratio = 0.25
     img = ToTensor()(image).to(device)
-    img_parse = Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))(img)
     src = img.unsqueeze(0)
     fgr, pha, *rec = model_matting(src, *rec, downsample_ratio) 
     com = fgr * pha + bgr * (1 - pha)
     com = com.squeeze(0)
-    source_img = com.permute(1, 2, 0).detach().cpu().numpy()
+    source_img = com.permute(1, 2, 0).detach().cpu().numpy()*255
+    source_img = cv2.cvtColor(source_img.astype('uint8'), cv2.COLOR_RGB2BGR)
     return source_img
 
 def parsing(image):
@@ -107,7 +108,9 @@ def parsing(image):
 
 def crop_image(image):
     mask, all_box, face_box = parsing(image)
+    image = cv2.cvtColor(np.array(image).astype('uint8'), cv2.COLOR_RGB2BGR)
     result_imgs = []
+    img_spec = [[30, 40], [40, 60]]
     for isp in img_spec:
         width, height, toptop, face_length, num_img = isp[0], isp[1], isp[2], isp[3], isp[4]
         new_face_box = [0,0,0,0]
