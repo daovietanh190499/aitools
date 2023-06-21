@@ -29,6 +29,10 @@ def white_balance(img):
     result = cv2.cvtColor(result, cv2.COLOR_LAB2BGR)
     return result
 
+def compress_image(image):
+    img_cv = cv2.cvtColor(np.array(image).astype('uint8'), cv2.COLOR_RGB2BGR)
+    return img_cv
+
 def smooth_face(img, size=20, sigma=5):
     img = cv2.cvtColor(np.array(img).astype('uint8'), cv2.COLOR_RGB2BGR)
     img = cv2.bilateralFilter(img,int(size),int(sigma),int(sigma))

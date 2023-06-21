@@ -10,7 +10,7 @@ from io import BytesIO
 import base64
 import traceback
 
-from tools import white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub
+from tools import compress_image, white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub
 from code_offline import code_scan
 
 app = FastAPI()
@@ -40,6 +40,17 @@ async def white_balance_(request: Request):
     image = await read_image(request)
     try:
         result = white_balance(image)
+        img_str = img2str(result)
+        return {"message": "success", "images": [img_str]}
+    except Exception as e:
+        print(traceback.format_exc())
+        return JSONResponse(content={"message": "server failure"}, status_code=500)
+
+@app.post('/compression')
+async def compress_image_(request: Request):
+    image = await read_image(request)
+    try:
+        result = compress_image(image)
         img_str = img2str(result)
         return {"message": "success", "images": [img_str]}
     except Exception as e:
