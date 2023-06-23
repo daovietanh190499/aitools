@@ -10,7 +10,7 @@ from io import BytesIO
 import base64
 import traceback
 
-from tools import compress_image, white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub
+from tools import compress_image, white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub, superesolution
 from code_offline import code_scan
 
 app = FastAPI()
@@ -103,6 +103,20 @@ async def crop_image_(request: Request):
     except Exception as e:
         print(traceback.format_exc())
         return JSONResponse(content={"message": "server failure"}, status_code=500)
+
+@app.post('/superesolution')
+async def superesolution_(request: Request):
+    image = await read_image(request)
+    try:
+        result = superesolution(image)
+        new_result = []
+        for r in result:
+            img_str = img2str(r)
+            new_result.append(img_str)
+        return {"message": "success", "images": new_result}
+    except Exception as e:
+        print(traceback.format_exc())
+        return JSONResponse(content={"message": "server failure"}, status_code=500)
     
 @app.post('/sub')
 async def sub_(request: Request):
@@ -120,7 +134,7 @@ async def sub_(request: Request):
         sub_text = ""
         for text, tran, tran2, bb in zip(texts, trans, trans2, bbs):
             sub_text += bb + '\n' + text + '\n' + tran + '\n' + tran2 + '\n'
-        return {"message": "success", "image": img_str, "sub_text": sub_text}
+        return {"message": "success", "images": [img_str], "sub_text": sub_text}
     except Exception as e:
         print(traceback.format_exc())
         return JSONResponse(content={"message": "server failure"}, status_code=500)

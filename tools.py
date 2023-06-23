@@ -29,6 +29,23 @@ def white_balance(img):
     result = cv2.cvtColor(result, cv2.COLOR_LAB2BGR)
     return result
 
+# def white_balance(image):
+#     # Convert image to Lab color space
+#     lab_image = cv2.cvtColor(cv2.cvtColor(np.array(image).astype('uint8'), cv2.COLOR_RGB2BGR), cv2.COLOR_BGR2LAB)
+#     # Split the Lab image into L, a, and b channels
+#     l_channel, a_channel, b_channel = cv2.split(lab_image)
+#     # Calculate mean and standard deviation of the a and b channels
+#     a_mean, a_std = cv2.meanStdDev(a_channel)
+#     b_mean, b_std = cv2.meanStdDev(b_channel)
+#     # Adjust the a and b channels using mean values
+#     a_channel = cv2.subtract(a_channel, a_mean[0])
+#     b_channel = cv2.subtract(b_channel, b_mean[0])
+#     # Merge the adjusted channels back to Lab image
+#     lab_image = cv2.merge((l_channel, a_channel, b_channel))
+#     # Convert Lab image back to BGR color space
+#     result_image = cv2.cvtColor(lab_image, cv2.COLOR_LAB2BGR)
+#     return result_image
+
 def compress_image(image):
     img_cv = cv2.cvtColor(np.array(image).astype('uint8'), cv2.COLOR_RGB2BGR)
     return img_cv
@@ -109,8 +126,9 @@ def parsing(image):
     return mask, all_box, face_box
 
 def crop_image(image):
-    mask, all_box, face_box = parsing(image)
     image = cv2.cvtColor(np.array(image).astype('uint8'), cv2.COLOR_RGB2BGR)
+    image = np.pad(image, ((int(image.shape[0]/4), int(image.shape[0]/4)), (int(image.shape[1]/4), int(image.shape[1]/4)), (0,0)), 'edge')
+    mask, all_box, face_box = parsing(Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB)))
     result_imgs = []
     img_spec = [[30, 40, 2.5, 25], [40, 60, 5, 30]]
     for isp in img_spec:
@@ -179,3 +197,6 @@ def sub(img, lang='vi'):
     img = cv2.cvtColor(np.array(img).astype('uint8'), cv2.COLOR_RGB2BGR)
     res =  infer(img, lang)
     return res
+
+def superesolution(): 
+    return
