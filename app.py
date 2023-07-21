@@ -10,7 +10,7 @@ from io import BytesIO
 import base64
 import traceback
 
-from tools import compress_image, white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub, superesolution
+from tools import compress_image, white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub, superesolution, xrayenhance
 from code_offline import code_scan
 
 app = FastAPI()
@@ -109,11 +109,19 @@ async def superesolution_(request: Request):
     image = await read_image(request)
     try:
         result = superesolution(image)
-        new_result = []
-        for r in result:
-            img_str = img2str(r)
-            new_result.append(img_str)
-        return {"message": "success", "images": new_result}
+        img_str = img2str(result)
+        return {"message": "success", "images": [img_str]}
+    except Exception as e:
+        print(traceback.format_exc())
+        return JSONResponse(content={"message": "server failure"}, status_code=500)
+
+@app.post('/xray_enhance')
+async def xray_enhance_(request: Request):
+    image = await read_image(request)
+    try:
+        result = xrayenhance(image)
+        img_str = img2str(result)
+        return {"message": "success", "images": [img_str]}
     except Exception as e:
         print(traceback.format_exc())
         return JSONResponse(content={"message": "server failure"}, status_code=500)

@@ -7,6 +7,12 @@ import numpy as np
 import math
 from facenet_pytorch import MTCNN
 import os
+import PIL.Image
+from manga_ocr import MangaOcr
+from scipy.ndimage.filters import gaussian_filter, median_filter, maximum_filter, minimum_filter
+from skimage import img_as_float
+
+mocr = MangaOcr()
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 device_str = "cuda" if torch.cuda.is_available() else "cpu"
@@ -177,7 +183,10 @@ def infer(img, lang):
 
     str_bboxes = [' '.join([str(num) for num in blk.xyxy]) for blk in blk_list]
 
-    ocr.ocr_blk_list(img, blk_list)
+    for blk in blk_list:
+        x1, y1, x2, y2 = blk.xyxy
+        blk.text = mocr(Image.fromarray(img[y1:y2, x1:x2]))
+
     torch.cuda.empty_cache()
 
     texts = [' '.join(blk.text) for blk in blk_list]
@@ -187,6 +196,8 @@ def infer(img, lang):
     img_inpainted =  dispatch_inpainting(True, False, use_cuda, img, mask_refined, 2048)
     torch.cuda.empty_cache()
     
+    texts_translated = []
+    texts_translated_2 = []
     if len(texts) > 0:
         texts_translated = trans.translate('\n'.join(texts), dest = 'en').text.split("\n")
         texts_translated_2 = trans.translate('\n'.join(texts_translated), dest = lang).text.split("\n")
@@ -198,5 +209,22 @@ def sub(img, lang='vi'):
     res =  infer(img, lang)
     return res
 
-def superesolution(): 
-    return
+from models import load_superesolution_model, dispatch_superesolution
+
+upsampler = load_superesolution_model('/home/coder/aitools/models/weights/RealESRGAN_x4plus.pth')
+
+def superesolution(img): 
+    img = cv2.cvtColor(np.array(img).astype('uint8'), cv2.COLOR_RGB2BGR)
+    output = dispatch_superesolution(upsampler, img)
+    return output
+
+def xrayenhance(image):
+    radius = 13
+    amount = 1
+    image = img_as_float(image) # ensuring float values for computations
+    blurred_image = gaussian_filter(image, sigma=radius)
+    mask = image - blurred_image # keep the edges created by the filter
+    sharpened_image = image + mask * amount
+    sharpened_image = np.clip(sharpened_image, float(0), float(1)) # Interval [0.0, 1.0]
+    sharpened_image = (sharpened_image*255).astype(np.uint8) # Interval [0,255]
+    return sharpened_image
