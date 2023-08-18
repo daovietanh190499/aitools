@@ -228,3 +228,28 @@ def xrayenhance(image):
     sharpened_image = np.clip(sharpened_image, float(0), float(1)) # Interval [0.0, 1.0]
     sharpened_image = (sharpened_image*255).astype(np.uint8) # Interval [0,255]
     return sharpened_image
+
+class_names = []
+with open("models/object_detection/classes.txt", "r") as f:
+    class_names = [cname.strip() for cname in f.readlines()]
+
+net = cv2.dnn.readNet("models/weights/yolov4-tiny.weights", "models/weights/yolov4-tiny.cfg")
+net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA_FP16)
+model = cv2.dnn_DetectionModel(net)
+model.setInputParams(size=(416, 416), scale=1/255, swapRB=True)
+
+CONFIDENCE_THRESHOLD = 0.2
+NMS_THRESHOLD = 0.4
+COLORS = [(0, 255, 255), (255, 255, 0), (0, 255, 0), (255, 0, 0)]
+
+def object_detection(image):
+    img = np.array(image).astype('uint8')
+    classes, scores, boxes = model.detect(img, CONFIDENCE_THRESHOLD, NMS_THRESHOLD)
+    for (classid, score, box) in zip(classes, scores, boxes):
+        color = COLORS[int(classid) % len(COLORS)]
+        label = "%s : %f" % (class_names[classid], score)
+        cv2.rectangle(img, box, color, 2)
+        cv2.putText(img, label, (box[0], box[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+    img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    return img

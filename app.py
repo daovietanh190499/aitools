@@ -10,7 +10,7 @@ from io import BytesIO
 import base64
 import traceback
 
-from tools import compress_image, white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub, superesolution, xrayenhance
+from tools import compress_image, white_balance, smooth_face, rotate_by_eye, matting, crop_image, sub, superesolution, xrayenhance, object_detection
 from code_offline import code_scan
 
 app = FastAPI()
@@ -120,6 +120,17 @@ async def xray_enhance_(request: Request):
     image = await read_image(request)
     try:
         result = xrayenhance(image)
+        img_str = img2str(result)
+        return {"message": "success", "images": [img_str]}
+    except Exception as e:
+        print(traceback.format_exc())
+        return JSONResponse(content={"message": "server failure"}, status_code=500)
+
+@app.post('/object_detection')
+async def object_detection_(request: Request):
+    image = await read_image(request)
+    try:
+        result = object_detection(image)
         img_str = img2str(result)
         return {"message": "success", "images": [img_str]}
     except Exception as e:
